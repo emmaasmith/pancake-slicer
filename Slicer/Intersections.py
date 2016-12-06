@@ -251,38 +251,52 @@ def perimeter(lines,epsilon):
 
 	return perimeters
 
-def grid_intersect(lines,gl):
+def grid_intersect(lines, gl):
 	vert = []
-	for l in lines:
-		s1_x = l.v2.x - l.v1.x
-		s1_y = l.v2.y - l.v1.y
-		s2_x = gl.v2.x - gl.v1.x
-		s2_y = gl.v2.y - gl.v1.y
-		d = (-s2_x * s1_y + s1_x * s2_y)
-		if (d == 0):
-			s = t = -1
-		else:
-			s = (-s1_y * (l.v1.x - gl.v1.x) + s1_x * (l.v1.y - gl.v1.y)) / d
-			t = ( s2_x * (l.v1.y - gl.v1.y) - s2_y * (l.v1.x - gl.v1.x)) / d
-		# intersection
-		if (0 <= s <= 1 and 0 <= t <= 1):
-			vert.append(Vert(l.v1.x + (t * s1_x), l.v1.y + (t * s1_y), l.v1.z))
+	for p in lines:
+		for l in p:
+			s1_x = l.v2.x - l.v1.x
+			s1_y = l.v2.y - l.v1.y
+			s2_x = gl.v2.x - gl.v1.x
+			s2_y = gl.v2.y - gl.v1.y
+			d = (-s2_x * s1_y + s1_x * s2_y)
+			if (d == 0):
+				s = t = -1
+			else:
+				s = (-s1_y * (l.v1.x - gl.v1.x) + s1_x * (l.v1.y - gl.v1.y)) / d
+				t = ( s2_x * (l.v1.y - gl.v1.y) - s2_y * (l.v1.x - gl.v1.x)) / d
+			# intersection
+			if (0 <= s <= 1 and 0 <= t <= 1):
+				vert.append(Vert(l.v1.x + (t * s1_x), l.v1.y + (t * s1_y), l.v1.z))
+	# print "Num intersect: ", len(vert)
 	return vert 
 
-def infill(lines,grid,n):
+def infill(lines, grid, n):
+	# print "n is ", n
 	newlines = []
 	for gl in grid:
-		vert = grid_intersect(lines,gl)
+		# Vert is a list of all intersecting points: lines vs. gridlines
+		vert = grid_intersect(lines, gl)
+		
 		i = 0
-		if (gl.v1.x == gl.v2.x):
+		if (withinEpsilon(gl.v1.x, gl.v2.x, 0.1)):
 			vert = list(numpy.unique(vert))
 			vert.sort(key = lambda v: v.y, reverse=False)
+			# print "1 "
+			# for v in vert:
+			# 	print v.x, v.y, v.z
+			# print " "
 			while (i+1 < len(vert)):
 				if abs(vert[i].y - vert[i+1].y) > n:
  					vert[i].y += n
  					vert[i+1].y -= n
  					newlines.append(Line(vert[i], vert[i+1]))
+ 					# print vert[i].x, vert[i].y, vert[i].z
+ 				# else:
+					# print "abs ", abs(vert[i].y - vert[i+1].y)
+
 				i += 2
+
 		else:
 			vert = list(numpy.unique(vert))
 			vert.sort(key = lambda v: v.x, reverse=False)
@@ -291,23 +305,30 @@ def infill(lines,grid,n):
  					vert[i].x += n
  					vert[i+1].x -= n
  					newlines.append(Line(vert[i], vert[i+1]))
+ 					# print "2", i
 				i += 2
+
+	# for nl in newlines:
+	# 	print nl.v1.x, nl.v1.y, nl.v1.z
+	# 	print nl.v2.x, nl.v2.y, nl.v2.z
+	# 	print " "
 	return newlines
 
 # give lines l and percent infill k
-def infill_grid(facets, k, n):
+def infill_grid(perims, k, n):
 	minx = float('+inf')
 	maxx = float('-inf')
 	miny = float('+inf')
 	maxy = float('-inf')
-	z = facets[0].v1.z # all z should be the same
+	z = perims[0][0].v1.z
 
 	# find bounding area
-	for f in facets:
-		minx = min(minx,f.v1.x,f.v2.x,f.v3.x)
-		maxx = max(maxx,f.v1.x,f.v2.x,f.v3.x)
-		miny = min(miny,f.v1.y,f.v2.y,f.v3.y)
-		maxy = max(maxy,f.v1.y,f.v2.y,f.v3.y)
+	for p in perims:
+		for l in p:
+			minx = min(minx, l.v1.x, l.v2.x)
+			maxx = max(maxx, l.v1.x, l.v2.x)
+			miny = min(miny, l.v1.y, l.v2.y)
+			maxy = max(maxy, l.v1.y, l.v2.y)
 
 	lowx = minx + (n*0.35) + 0.1
 	lowy = miny + (n*0.35) + 0.1
@@ -317,19 +338,29 @@ def infill_grid(facets, k, n):
 	maxy += 1
 	minx -= 1
 	miny -= 1
-	stepx = (maxx - minx) * k 
-	stepy = (maxy - miny) * k
+	if (k > 0.95): k = 0.95
+	if (k > 0.95): k = 0.95
+
+	# dif = all steps
+	# dif / n  = # of layers
+	# dif / 100 = 1% filled
+	# dif * x = x% (x is a decimal) filled
+	# dif * x / n = # of layers
+
+	stepx = n + (n * (1 - k))
+	stepy = n + (n * (1 - k))
 	if (stepy == 0 or stepx == 0):
 		return []
-	if (stepy < 0.35): stepy = 0.35
-	if (stepx < 0.35): stepx = 0.35
+	if (stepy < n): stepy = n
+	if (stepx < n): stepx = n
+
 
 	# infill grid lines
 	grid=[]
-	for x in numpy.arange(lowx,hix,stepx):
-		grid.append(Line(Vert(x,miny,z),Vert(x,maxy,z)))
-	for y in numpy.arange(lowy,hiy,stepy):
-		grid.append(Line(Vert(minx,y,z),Vert(maxx,y,z)))
+	for x in numpy.arange(lowx, hix, stepx):
+		grid.append(Line(Vert(x, miny, z), Vert(x, maxy, z)))
+	for y in numpy.arange(lowy, hiy, stepy):
+		grid.append(Line(Vert(minx, y, z), Vert(maxx, y, z)))
 
 	return grid
 

@@ -45,9 +45,9 @@ def processPancake(imgurl, rad, tol):
 				v2 = Vert(float(p[i+1][0][0]), float(p[i+1][0][1]), 1.0)
 				lines.append(Line(v1, v2, Vert(0.0, 0.0, 1.0)))
 				i+=1
-			# v1 = Vert(float(p[i][0][0]), float(p[i][0][1]), 1.0)
-			# v2 = Vert(float(p[0][0][0]), float(p[0][0][1]), 1.0)
-			# lines.append(Line(v1, v2, Vert(0.0, 0.0, 1.0)))
+			v1 = Vert(float(p[i][0][0]), float(p[i][0][1]), 1.0)
+			v2 = Vert(float(p[0][0][0]), float(p[0][0][1]), 1.0)
+			lines.append(Line(v1, v2, Vert(0.0, 0.0, 1.0)))
 
 			perims.append(lines)
 
@@ -104,49 +104,25 @@ def find_norm(v1,v2,v3):
 	n12 = div(n12,m)
 	return n12
 
-def gcode_fill(gcode,fillLayer,epsilon,first):
+def gcode_fill(gcode,perim,epsilon,first):
 	lines = []
 	found = False
-	for f in fillLayer:
-		norm = find_norm(f.v1,f.v2,f.v3)
-		l1 = Line(f.v1,f.v2,norm)
-		for l in lines:
-			if equall(l1,l):
-				found = True
-				lines.remove(l)
-		if not found: 
-			lines.append(l1)
-		found = False
-		norm = find_norm(f.v1,f.v3,f.v2)
-		l2 = Line(f.v1,f.v3,norm)
-		for l in lines:
-			if equall(l2,l):
-				found = True
-				lines.remove(l)
-		if not found: 
-			lines.append(l2)
-		found = False
-		norm = find_norm(f.v2,f.v3,f.v1)
-		l3 = Line(f.v2,f.v3,norm)
-		for l in lines:
-			if equall(l3,l):
-				found = True
-				lines.remove(l)
-		if not found: 
-			lines.append(l3)
-		found = False
-	perim = perimeter(lines,0.01)
+	norm = Line(0.0, 0.0, 0.1)
+	
+	for l in perim:
+		lines.append(l)
+
 	# find range
 	minx = lines[0].v1.x
 	maxx = lines[0].v1.x
 	miny = lines[0].v1.y
 	maxy = lines[0].v1.y
 	for l in lines:
-		minx = min(minx,l.v1.x,l.v2.x)
-		maxx = max(maxx,l.v1.x,l.v2.x)
-		miny = min(miny,l.v1.y,l.v2.y)
-		maxy = max(maxy,l.v1.y,l.v2.y)
-	d = min((maxx-minx),(maxy-miny))
+		minx = min(minx, l.v1.x, l.v2.x)
+		maxx = max(maxx, l.v1.x, l.v2.x)
+		miny = min(miny, l.v1.y, l.v2.y)
+		maxy = max(maxy, l.v1.y, l.v2.y)
+	d = min((maxx - minx), (maxy - miny))
 	s = len(perim)
 	d = d / (s*2)
 	i = ((s-1) * .6)
@@ -156,7 +132,8 @@ def gcode_fill(gcode,fillLayer,epsilon,first):
 		d = int(d*i)
 	elif 8 > s > 2:
 		d = 0
-	gcode_perim(gcode,perim,d,first,True)
+	print "D is ", d
+	gcode_perim(gcode, perim, int(d), first, True)
 
 def gcode_perim(gcode,ls,n,first,fill):
 	global extrude
@@ -165,20 +142,23 @@ def gcode_perim(gcode,ls,n,first,fill):
 	if fill:
 		slow = 2000
 		fast = 2200
+
+		for line in ls:
+			line.n.z = 0
+			m = magnitude1v(line.n)
 	else:
 		slow = 2000
 		fast = 2200
 
-	for l in ls:
-		for line in l:
-			line.n.z = 0
-			m = magnitude1v(line.n)
+		for l in ls:
+			for line in l:
+				line.n.z = 0
+				m = magnitude1v(line.n)
 
 	for i in range(n):
 		if not fill:
 			gcode.write(";PERIMLAYER:%d\n" % i)
 		for l in ls:	
-			print l
 			size = len(l)
 
 			# go to starting point
@@ -192,7 +172,7 @@ def gcode_perim(gcode,ls,n,first,fill):
 			if (size > 1): next_ind = 1 
 			else: next_ind = 0
 			if (first):
-				gcode.write("G0 X%.3f" % va.x + " Y%.3f" % va.y + " Z%.3f" % (va.z+0.3) + " F%.1f\n" % slow)
+				gcode.write("G0 X%.3f" % va.x + " Y%.3f" % va.y + " Z%.3f" % (va.z+0.3) + " E0" + " F%.1f\n" % slow)
 				first = False
 			else:
 				gcode.write("G0 X%.3f" % va.x + " Y%.3f" % va.y + " F%.1f\n" % fast)
@@ -209,10 +189,11 @@ def gcode_perim(gcode,ls,n,first,fill):
 				vc = vb
 				gcode.write("G1 X%.3f" % vb.x + " Y%.3f" % vb.y + " E%.4f" % extrude + " F%.1f\n" % slow)
 
-def gcode_infill(gcode,ls,first,fill):
+def gcode_infill(gcode, ls, first, fill):
 	global extrude
 	last_time = True
 	for l in ls:
+		# Switch off
 		if (last_time):
 			va = l.v1
 			vb = l.v2
@@ -221,15 +202,21 @@ def gcode_infill(gcode,ls,first,fill):
 			va = l.v2
 			vb = l.v1
 			last_time = True
-		if fill:
-			extrude += magnitude2v(va,vb) * 0.2
-		else:
-			extrude += magnitude2v(va,vb) * 0.05
+
+		# # Is this for infill
+		# if fill:
+		# 	extrude += magnitude2v(va,vb) * 0.2
+		# else:
+		# 	extrude += magnitude2v(va,vb) * 0.05
+
+		# First time?
 		if first:
-			gcode.write("G0 X%.3f" % va.x + " Y%.3f" % va.y + " Z%.3f" % (va.z+0.3) + " F3000.0\n")
+			gcode.write("G0 X%.3f" % va.x + " Y%.3f" % va.y + " Z%.3f" % (va.z+0.3) + " E0" + " F3000.0\n")
 			first = False
 		else:
-			gcode.write("G1 X%.3f" % va.x + " Y%.3f" % va.y + " F3000.0\n")
+			gcode.write("G0 X%.3f" % va.x + " Y%.3f" % va.y + " E0" + " F3000.0\n")
+
+		# Write the line	
 		gcode.write("G1 X%.3f" % vb.x + " Y%.3f" % vb.y + " E%.4f" % extrude + " F20000.0\n")
 
 
@@ -266,7 +253,7 @@ def main():
 						help="layer thickness")
 	parser.add_option("--infill",
 						dest="p_infill",
-						default=.2,
+						default=1.0,
 						help = "percent infill")
 	parser.add_option("--in",
 						dest="img",
@@ -324,7 +311,7 @@ def main():
 	# supports = support(mesh, epsilon)
 
 	# ht = float(findHeight(mesh))
-	# grid = infill_grid(mesh,float(parse.p_infill),int(parse.p_numlayers))
+	grid = infill_grid(perims, float(parse.p_infill), int(parse.p_numlayers))
 
 	# # Determine the layers and build perimeters
 	# x = float(0.0)
@@ -342,8 +329,17 @@ def main():
 	# fl = giveFillLayer()
 	# fills.append(fl)
 	# emptyFillLayer()
-	# ls[0] = [item for l in ls for item in l]
-	# il = infill(ls[0], grid, int(parse.p_numlayers) * float(parse.p_layerthickness))
+	# allperims = [item for l in perims for item in l]
+
+	# Perims is an array (item = each perimeter) of arrays (item = each line)
+	# print "Num perims: ", len(perims)
+	# x=0
+	# for lns in perims:
+	# 	x += len(lns)
+	# print "Num lines: ", x
+	il = infill(perims, grid, int(parse.p_numlayers) * float(parse.p_layerthickness))
+
+
 	# infill_lines.append(il)
 
 	# if (ht > x >= ht - float(parse.p_layerthickness)):
@@ -358,8 +354,8 @@ def main():
 	# while (x < (ht+.4)): #(ht+(2*float(parse.p_layerthickness)))):
 	# 	gcode.write(";LAYER:" + str(layer) + "\n")
 	# 	if (layer == 0):
-	# 		gcode.write("M107\n")
-	# 		gcode.write("G1 F1500.0 E-6.50000\n")
+	gcode.write("M107\n")
+	gcode.write("G1 F1500.0 E-6.50000\n")
 	# 	if (layer == 1):
 	# 		gcode.write("M106 S255.0\n");
 
@@ -370,8 +366,8 @@ def main():
 
 
 	# gcode.write(";FILLLAYER:0\n")
-	# gcode_fill(gcode, perims, epsilon, first)
-
+	# for p in perims:
+	# 	gcode_fill(gcode, p, epsilon, first)
 
 
 
@@ -386,13 +382,15 @@ def main():
 
 
 
-
+	# print il
 
 	# 		first = False
 	gcode.write(";PERIM:0\n")
 	gcode_perim(gcode, perims, int(parse.p_numlayers), first, False)
-	# gcode.write(";INFILL:" + str(layer) + "\n")
-	# gcode_infill(gcode,infill_lines[layer],first,False)
+
+	gcode.write(";INFILL:0\n")
+	gcode_infill(gcode, il, first, False)
+
 	# 	# gcode.write(";SUPPORT:" + str(layer) + "\n")
 	# 	# gcode_support(gcode, supports, x)
 
