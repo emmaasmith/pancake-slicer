@@ -103,10 +103,10 @@ def gcode_perim(gcode, ls, n, first, fill):
 		else: next_ind = 0
 
 		if (first):
-			gcode.write("G0 X%.3f" % va.x + " Y%.3f" % va.y + " Z%.3f" % (va.z+0.3) + " E0" + " F%.1f\n" % slow)
+			gcode.write("G0 X%.3f" % va.x + " Y%.3f" % va.y + " Z%.3f" % (va.z+0.3) + " F%.1f\n" % slow)
 			first = False
 		else:
-			gcode.write("G0 X%.3f" % va.x + " Y%.3f" % va.y + " E0" + " F%.1f\n" % fast)
+			gcode.write("G0 X%.3f" % va.x + " Y%.3f" % va.y + " F%.1f\n" % fast)
 		
 		for line in l:
 			n1 = line.n 
@@ -118,7 +118,7 @@ def gcode_perim(gcode, ls, n, first, fill):
 			if (next_ind > size-1): next_ind = 0
 
 			vb = sub(line.v2, mult(norm,i))
-			extrude += magnitude2v(vc,vb) * 0.05
+			extrude += magnitude2v(vc,vb) * 0.1
 			vc = vb
 			gcode.write("G1 X%.3f" % vb.x + " Y%.3f" % vb.y + " E%.4f" % extrude + " F%.1f\n" % slow)
 
@@ -139,10 +139,10 @@ def gcode_infill(gcode, ls, first):
 
 		# First time?
 		if first:
-			gcode.write("G0 X%.3f" % va.x + " Y%.3f" % va.y + " Z%.3f" % (va.z+0.3) + " E0" + " F3000.0\n")
+			gcode.write("G0 X%.3f" % va.x + " Y%.3f" % va.y + " Z%.3f" % (va.z+0.3) + " F3000.0\n")
 			first = False
 		else:
-			gcode.write("G0 X%.3f" % va.x + " Y%.3f" % va.y + " E0" + " F3000.0\n")
+			gcode.write("G0 X%.3f" % va.x + " Y%.3f" % va.y + " F3000.0\n")
 
 		# Write the line	
 		gcode.write("G1 X%.3f" % vb.x + " Y%.3f" % vb.y + " E%.4f" % extrude + " F20000.0\n")
@@ -272,8 +272,8 @@ def main():
 	perims0 = allperims[0]
 
 	first = True
-	gcode.write(";PERIM:0\n")
-	gcode_perim(gcode, perims0, parse.p_numlayers, first, False)
+	# gcode.write(";PERIM:0\n")
+	# gcode_perim(gcode, perims0, parse.p_numlayers, first, False)
 
 
 	#################################
