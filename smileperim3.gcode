@@ -9,7 +9,7 @@ G28 Z0    ;home Z
 G92 E0    ;zero the extruded length
 G29       ;initiate auto bed leveling sequence
 G92 X132.4 Y20 ;correct bed origin (G29 changes it)
-G1 X50.949 Y51.120 F6000.000
+G0 X50.949 Y51.120 F6000.000
 G1 Z0.361 F6000.000
 G1 E2.00000 F1800.000
 M107

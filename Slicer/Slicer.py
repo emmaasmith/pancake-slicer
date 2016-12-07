@@ -254,11 +254,10 @@ def main():
 	gcode.write("G92 E0    ;zero the extruded length\n")
 	gcode.write("G29       ;initiate auto bed leveling sequence\n")
 	gcode.write("G92 X132.4 Y20 ;correct bed origin (G29 changes it)\n")
-	gcode.write("G1 X50.949 Y51.120 F6000.000\n")
+	gcode.write("G0 X50.949 Y51.120 F6000.000\n")
 	gcode.write("G1 Z0.361 F6000.000\n")
 	gcode.write("G1 E2.00000 F1800.000\n")
 
-	##### Process the STL and build a mesh, supports, infill grid
 	gcode.write("M107\n")
 	gcode.write("G1 F1500.0 E-6.50000\n")
 
