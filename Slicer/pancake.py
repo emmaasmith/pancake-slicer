@@ -4,7 +4,7 @@ import cv2
 import math
 from matplotlib import pyplot as plt
 
-def pancake(imgurl, rad, tol, tol2, epsilon):
+def pancake(imgurl, rad, tol, tol2, epsilon, white):
 	# load image
 	img = cv2.imread(imgurl)
 	grayimg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -116,16 +116,23 @@ def pancake(imgurl, rad, tol, tol2, epsilon):
 	# Outer image perimeter
 	#########################
 
-	# ret,whitethresh = cv2.threshold(grayblur, 200, 255, cv2.THRESH_BINARY_INV)
-	# ret,cannyc = cv2.threshold(whitethresh, 127, 255, cv2.THRESH_BINARY_INV)
-	# whitecontours,hierarchy4 = cv2.findContours(cannyc, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+	WHITE = [255,0,0]
+	whitethreshborder = cv2.copyMakeBorder(grayblur, 2, 2, 2, 2, cv2.BORDER_CONSTANT, value=WHITE)
+	ret,whitethresh = cv2.threshold(whitethreshborder, 255 - white, 255, cv2.THRESH_BINARY_INV)
+	whitecontours,hierarchy4 = cv2.findContours(whitethresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-	# for c in whitecontours:
-	# 	approx = cv2.approxPolyDP(c, epsilon, True)
-	# 	cv2.drawContours(whitebg, [approx], -1, (255, 0, 0), -1)
+	index = 0
+	maxarea = 0
+	maxindex = 0
+	for c in whitecontours:
+		warea = cv2.contourArea(c)
+		if warea > maxarea:
+			maxarea = warea
+			maxindex = index
+		index+=1
 
-	# cv2.imshow("Brightest3", whitebg)
-
+	approx = cv2.approxPolyDP(whitecontours[maxindex], epsilon, True)
+	cv2.drawContours(whitebg, [approx], -1, (0, 0, 0), -1)
 
 
 
@@ -134,13 +141,16 @@ def pancake(imgurl, rad, tol, tol2, epsilon):
 	# cv2.imshow("Brightest2", g)
 	# cv2.imshow("Brightest1", r)
 	# cv2.imshow("Final", img)
+	# cv2.imshow("Outer", whitebg)
+
 	# cv2.waitKey(0)
 
-	return [totperim, approx1, approx2, approx3]
+	return [totperim, approx1, approx2, approx3, [approx]]
 
-# pancake('images/me.jpg', 101, 0, .35)
-# pancake('images/id.jpg', 101, -60, -75, .35)
-# pancake('images/smile.jpg', 50, 50, 40, 5)
+# pancake('images/me.jpg', 101, 0, .35, 5)
+# pancake('images/id.jpg', 101, -60, -75, .35, 5)
+# pancake('images/smile.jpg', 50, 50, 40, 5, 5)
+# pancake('images/spiritday.jpg', 400, -40, 0, .035, 35)
 
 
 

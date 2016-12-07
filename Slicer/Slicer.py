@@ -30,8 +30,8 @@ from pancake import pancake
 
 extrude = 2.0
 
-def processPancake(imgurl, rad, tol1, tol2, epsilon):
-	img = pancake(imgurl, rad, tol1, tol2, epsilon)
+def processPancake(imgurl, rad, tol1, tol2, epsilon, white):
+	img = pancake(imgurl, rad, tol1, tol2, epsilon, white)
 
 	allperims = []
 	
@@ -196,6 +196,11 @@ def main():
 						dest="tolerance2",
 						default=-100.0,
 						help = "Middle layer: 0 default; abs val max 50; - for darker, + if lighter")
+	parser.add_option("--w",
+						dest="white",
+						default=5.0,
+						help = "White tolerance, lower = more sensitive. Photos ~35. White background ~5.")
+	
 	(parse,args) = parser.parse_args()
 	if not parse.img:
 		parser.error("input file path required as argument (-h for help)")
@@ -208,6 +213,7 @@ def main():
 	parse.p_layerthickness = float(parse.p_layerthickness)
 	parse.p_infill = float(parse.p_infill)
 	parse.p_numlayers = int(parse.p_numlayers)
+	parse.white = float(parse.white)
 
 	if parse.p_numlayers < 1:
 		parser.error("num layers must be >= 1 (-h for help)")
@@ -241,7 +247,7 @@ def main():
 	gcode.write("M107\n")
 	gcode.write("G1 F1500.0 E-6.50000\n")
 
-	allperims = processPancake(parse.img, parse.radius, parse.tolerance, parse.tolerance2, parse.p_layerthickness)
+	allperims = processPancake(parse.img, parse.radius, parse.tolerance, parse.tolerance2, parse.p_layerthickness, parse.white)
 
 	#################################
 	# PERIMETER ONLY LAYER
@@ -292,10 +298,14 @@ def main():
 	gcode_infill(gcode, il3, first)
 
 
-	# #################################
-	# # FINAL INFILL PERIMETER
-	# gcode.write(";INFILL:0\n")
-	# gcode_infill(gcode, il, first)
+	#################################
+	# FINAL INFILL PERIMETER
+	perims4 = allperims[4]
+	grid4 = infill_grid(perims4, parse.p_infill, parse.p_numlayers * parse.p_layerthickness)
+	il4 = infill(perims4, grid4, parse.p_numlayers * float(parse.p_layerthickness))
+
+	gcode.write(";INFILL:0\n")
+	gcode_infill(gcode, il4, first)
 
 
 	# write end gcode
