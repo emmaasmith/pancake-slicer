@@ -103,8 +103,6 @@ def pancake(imgurl, rad, tol, tol2, epsilon):
 			else:
 				perimdoubled.append(cx)
 
-
-
 	totperim = []
 	for p in perimdoubled:
 		phalf = len(p) / 2
@@ -113,10 +111,6 @@ def pancake(imgurl, rad, tol, tol2, epsilon):
 	for p in perimlines:
 		totperim.append(p)
 
-
-	# totperim = perimlines.extend(perimfixed)
-
-	# print "HELLO", type(perimfixed[0])
 
 	#########################
 	# Outer image perimeter
