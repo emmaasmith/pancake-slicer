@@ -4,13 +4,15 @@ import cv2
 import math
 from matplotlib import pyplot as plt
 
-def pancake(imgurl, rad, tol, tol2, epsilon, white, imagetoggle):
+def pancake(imgurl, rad, tol, tol2, epsilon, white, imagetoggle, flip):
 
 	#########################
 	# Set up images
 	#########################
 
 	img = cv2.imread(imgurl)
+	if flip:
+		img = cv2.flip(img,1)
 	grayimg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
 	r = img.copy()
@@ -137,4 +139,3 @@ def pancake(imgurl, rad, tol, tol2, epsilon, white, imagetoggle):
 		cv2.waitKey(0)
 
 	return [totperim, approx1, approx2, approx3, [approx]]
-	

@@ -28,8 +28,8 @@ extrude = 2.0
 # I/O
 #########################
 
-def processPancake(imgurl, rad, tol1, tol2, epsilon, white, imagetoggle):
-	img = pancake(imgurl, rad, tol1, tol2, epsilon, white, imagetoggle)
+def processPancake(imgurl, rad, tol1, tol2, epsilon, white, imagetoggle, flip):
+	img = pancake(imgurl, rad, tol1, tol2, epsilon, white, imagetoggle, flip)
 
 	allperims = []
 	
@@ -199,7 +199,11 @@ def main():
 						dest="white",
 						default=5.0,
 						help = "White tolerance, lower = more sensitive. Photos ~35. White background ~5.")
-	
+	parser.add_option("--flip", 
+						action="store_true", 
+						dest="flip",
+						default=False,
+						help = "Flip: for final print")
 	parser.add_option("--img", 
 						action="store_true", 
 						dest="imagetoggle",
@@ -262,7 +266,7 @@ def main():
 	gcode.write("G1 F1500.0 E-6.50000\n")
 
 	allperims = processPancake(parse.img, parse.radius, parse.tolerance, 
-		parse.tolerance2, parse.p_layerthickness, parse.white, parse.imagetoggle)
+		parse.tolerance2, parse.p_layerthickness, parse.white, parse.imagetoggle, parse.flip)
 
 
 	#################################
@@ -272,8 +276,8 @@ def main():
 	perims0 = allperims[0]
 
 	first = True
-	# gcode.write(";PERIM:0\n")
-	# gcode_perim(gcode, perims0, parse.p_numlayers, first, False)
+	gcode.write(";PERIM:0\n")
+	gcode_perim(gcode, perims0, parse.p_numlayers, first, False)
 
 
 	#################################
