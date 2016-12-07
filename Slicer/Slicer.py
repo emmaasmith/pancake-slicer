@@ -49,9 +49,10 @@ def processPancake(imgurl, rad, tol1, tol2, epsilon):
 					v2 = Vert(float(p[i+1][0][0]), float(p[i+1][0][1]), 1.0)
 					lines.append(Line(v1, v2, Vert(0.0, 0.0, 1.0)))
 					i+=1
-				v1 = Vert(float(p[i][0][0]), float(p[i][0][1]), 1.0)
-				v2 = Vert(float(p[0][0][0]), float(p[0][0][1]), 1.0)
-				lines.append(Line(v1, v2, Vert(0.0, 0.0, 1.0)))
+					
+				# v1 = Vert(float(p[i][0][0]), float(p[i][0][1]), 1.0)
+				# v2 = Vert(float(p[0][0][0]), float(p[0][0][1]), 1.0)
+				# lines.append(Line(v1, v2, Vert(0.0, 0.0, 1.0)))
 
 				perims.append(lines)
 		allperims.append(perims)
@@ -239,52 +240,50 @@ def main():
 	#################################
 	# PERIMETER ONLY LAYER
 	perims0 = allperims[0]
-	grid = infill_grid(perims0, parse.p_infill, parse.p_numlayers * parse.p_layerthickness)
-	il = infill(perims0, grid, parse.p_numlayers * parse.p_layerthickness)
 
 	first = True
 	gcode.write(";PERIM:0\n")
 	gcode_perim(gcode, perims0, parse.p_numlayers, first, False)
 
 
-	#################################
-	# DARKEST LAYER
-	perims1 = allperims[1]
-	grid1 = infill_grid(perims1, parse.p_infill, parse.p_numlayers * parse.p_layerthickness)
-	il1 = infill(perims1, grid1, parse.p_numlayers * parse.p_layerthickness)
+	# #################################
+	# # DARKEST LAYER
+	# perims1 = allperims[1]
+	# grid1 = infill_grid(perims1, parse.p_infill, parse.p_numlayers * parse.p_layerthickness)
+	# il1 = infill(perims1, grid1, parse.p_numlayers * parse.p_layerthickness)
 
-	first = False
-	gcode.write(";PERIM:0\n")
-	gcode_perim(gcode, perims1, parse.p_numlayers, first, False)
+	# first = False
+	# gcode.write(";PERIM:0\n")
+	# gcode_perim(gcode, perims1, parse.p_numlayers, first, False)
 
-	gcode.write(";INFILL:0\n")
-	gcode_infill(gcode, il1, first)
-
-
-	#################################
-	# MIDDLE LAYER
-	perims2 = allperims[2]
-	grid2 = infill_grid(perims2, parse.p_infill, parse.p_numlayers * parse.p_layerthickness)
-	il2 = infill(perims2, grid2, parse.p_numlayers * float(parse.p_layerthickness))
-
-	gcode.write(";PERIM:0\n")
-	gcode_perim(gcode, perims2, parse.p_numlayers, first, False)
-
-	gcode.write(";INFILL:0\n")
-	gcode_infill(gcode, il2, first)
+	# gcode.write(";INFILL:0\n")
+	# gcode_infill(gcode, il1, first)
 
 
-	#################################
-	# LIGHTEST LAYER
-	perims3 = allperims[3]
-	grid3 = infill_grid(perims3, parse.p_infill, parse.p_numlayers * parse.p_layerthickness)
-	il3 = infill(perims3, grid3, parse.p_numlayers * float(parse.p_layerthickness))
+	# #################################
+	# # MIDDLE LAYER
+	# perims2 = allperims[2]
+	# grid2 = infill_grid(perims2, parse.p_infill, parse.p_numlayers * parse.p_layerthickness)
+	# il2 = infill(perims2, grid2, parse.p_numlayers * float(parse.p_layerthickness))
 
-	gcode.write(";PERIM:0\n")
-	gcode_perim(gcode, perims3, parse.p_numlayers, first, False)
+	# gcode.write(";PERIM:0\n")
+	# gcode_perim(gcode, perims2, parse.p_numlayers, first, False)
 
-	gcode.write(";INFILL:0\n")
-	gcode_infill(gcode, il3, first)
+	# gcode.write(";INFILL:0\n")
+	# gcode_infill(gcode, il2, first)
+
+
+	# #################################
+	# # LIGHTEST LAYER
+	# perims3 = allperims[3]
+	# grid3 = infill_grid(perims3, parse.p_infill, parse.p_numlayers * parse.p_layerthickness)
+	# il3 = infill(perims3, grid3, parse.p_numlayers * float(parse.p_layerthickness))
+
+	# gcode.write(";PERIM:0\n")
+	# gcode_perim(gcode, perims3, parse.p_numlayers, first, False)
+
+	# gcode.write(";INFILL:0\n")
+	# gcode_infill(gcode, il3, first)
 
 
 	# #################################

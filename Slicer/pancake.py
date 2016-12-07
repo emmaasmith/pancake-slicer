@@ -1,6 +1,7 @@
 import numpy as np
 import argparse
 import cv2
+import math
 from matplotlib import pyplot as plt
 
 def pancake(imgurl, rad, tol, tol2, epsilon):
@@ -12,6 +13,9 @@ def pancake(imgurl, rad, tol, tol2, epsilon):
 	g = img.copy()
 	b = img.copy()
 	whitebg = img.copy()
+
+	height, width, channels = img.shape
+	
 
 	#########################
 	# Image levels
@@ -67,13 +71,52 @@ def pancake(imgurl, rad, tol, tol2, epsilon):
 	# Perimeter
 	#########################
 
-	thresh = cv2.Canny(grayimg, 100, rad)
-	contours,hierarchy = cv2.findContours(thresh, 1, 1)
+	thresh = cv2.Canny(grayblur, 150 - rad, 150 + rad)
+	contours,hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+	# i=0
+	# perimlines = []
+	# for h in hierarchy[0]:
+	# 	if (hierarchy[0][i][3] >= 0):
+	# 		print h
+	# 		# cv2.drawContours(img, [contours[i]], -1, (0, 0, 255), 1)
+	# 		# perimlines.append(contours[i])
+	# 	else:
+	# 		print "no ", h
+	# 		cv2.drawContours(img, [contours[i]], -1, (0, 0, 255), 1)
+	# 		perimlines.append(contours[i])
+	# 	i+=1
+
 
 	perimlines = []
+	perimdoubled = []
 	for c in contours:
-		cv2.drawContours(img, [c], -1, (0, 0, 255), 2)
-		perimlines.append(c)
+		carea = cv2.contourArea(c)
+		cperim = cv2.arcLength(c, True)
+		# print carea, cperim, "   ", carea/(cperim)
+		if cperim > 0.0:
+			cx = cv2.approxPolyDP(c, epsilon, False)
+			cv2.drawContours(img, [cx], -1, (0, 0, 255), 1)
+
+			if (carea/cperim > 1.0):
+				perimlines.append(cx)
+			else:
+				perimdoubled.append(cx)
+
+
+
+	perimfixed = []
+	for p in perimdoubled:
+		phalf = len(p) / 2
+		if phalf > 0:
+			perimfixed.append(p[0:phalf+1])
+
+	
+	# print (perimlines)
+	# print " BRUTAL3"
+	# print (perimfixed)
+
+	totperim = np.concatenate([perimlines, perimfixed])
 
 	#########################
 	# Outer image perimeter
@@ -93,17 +136,17 @@ def pancake(imgurl, rad, tol, tol2, epsilon):
 
 
 
+	# cv2.imshow("Brightest3", b)
+	# cv2.imshow("Brightest2", g)
+	# cv2.imshow("Brightest1", r)
 	cv2.imshow("Final", img)
-	cv2.imshow("Brightest3", b)
-	cv2.imshow("Brightest2", g)
-	cv2.imshow("Brightest1", r)
 	cv2.waitKey(0)
 
-	return [perimlines, approx1, approx2, approx3]
+	return [totperim, approx1, approx2, approx3]
 
 # pancake('images/me.jpg', 101, 0, .35)
 # pancake('images/id.jpg', 101, -60, -75, .35)
-# pancake('images/smile.jpg', 101, 50, 40, 5)
+# pancake('images/smile.jpg', 50, 50, 40, 5)
 
 
 
