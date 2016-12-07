@@ -4,14 +4,8 @@ import math
 import os
 import cv2
 
-from Intersections import buildPerimeter
-from Intersections import perimeter
 from Intersections import infill
 from Intersections import infill_grid
-#from Intersections import full_fill_grid
-from Intersections import giveFillLayer
-from Intersections import emptyFillLayer 
-from Facet import Facet
 from Plane import Plane
 from Line import Line
 from Line import equall
@@ -30,8 +24,12 @@ from pancake import pancake
 
 extrude = 2.0
 
-def processPancake(imgurl, rad, tol1, tol2, epsilon, white):
-	img = pancake(imgurl, rad, tol1, tol2, epsilon, white)
+#########################
+# I/O
+#########################
+
+def processPancake(imgurl, rad, tol1, tol2, epsilon, white, imagetoggle):
+	img = pancake(imgurl, rad, tol1, tol2, epsilon, white, imagetoggle)
 
 	allperims = []
 	
@@ -62,20 +60,11 @@ def processPancake(imgurl, rad, tol1, tol2, epsilon, white):
 
 	return allperims
 
-##### gcode helpers
+#########################
+# GCode Printing
+#########################
 
-def find_norm(v1,v2,v3):
-	v12 = sub(v1,v2)
-	v13 = sub(v1,v3)
-	n12 = Vert(v12.y,-1*v12.x)
-	d = dot(n12,v13)
-	if d < 0:
-		n12 = mult(n12,-1)
-	n12.z = 0
-	m = magnitude1v(n12)
-	n12 = div(n12,m)
-	return n12
-
+# GCode printing for perimeters
 def gcode_perim(gcode, ls, n, first, fill):
 	global extrude
 	i = 0
@@ -96,20 +85,19 @@ def gcode_perim(gcode, ls, n, first, fill):
 				line.n.z = 0
 				m = magnitude1v(line.n)
 
-	# for i in range(n):
 	if not fill:
 		gcode.write(";PERIMLAYER:0\n")
 
 	for l in ls:	
 		size = len(l)
 
-		# go to starting point
+		# Go to starting point
 		n1 = l[0].n 
 		n2 = l[size-1].n
 		norm = add(n1,n2)
 		m = magnitude1v(norm)
 
-		va = sub(l[0].v1,mult(norm, 1)) # approx nozzle thickness
+		va = sub(l[0].v1,mult(norm, 1))
 		vc = va
 		if (size > 1): next_ind = 1 
 		else: next_ind = 0
@@ -134,7 +122,7 @@ def gcode_perim(gcode, ls, n, first, fill):
 			vc = vb
 			gcode.write("G1 X%.3f" % vb.x + " Y%.3f" % vb.y + " E%.4f" % extrude + " F%.1f\n" % slow)
 
-
+# GCode printing for infill
 def gcode_infill(gcode, ls, first):
 	global extrude
 	last_time = True
@@ -159,12 +147,19 @@ def gcode_infill(gcode, ls, first):
 		# Write the line	
 		gcode.write("G1 X%.3f" % vb.x + " Y%.3f" % vb.y + " E%.4f" % extrude + " F20000.0\n")
 
-######### MAIN
+
+#########################
+# Main
+#########################
 
 def main():
-	##### Set up parameters
+
+	#################################
+	# Option parser inputs
+	#################################
+
 	parser = OptionParser()
-		# parsing
+
 	parser.add_option("--out",
 						dest="outF",
 						default="out.gcode",
@@ -173,6 +168,10 @@ def main():
 						dest="p_numlayers",
 						default=1,
 						help="number of perimeter layers")
+	parser.add_option("--l",
+						dest="levels",
+						default=3,
+						help="# of levels of shading: 1 perimeter, up to 3 levels of shading, 1 final")
 	parser.add_option("--th",
 						dest="p_layerthickness",
 						default=.35,
@@ -201,6 +200,17 @@ def main():
 						default=5.0,
 						help = "White tolerance, lower = more sensitive. Photos ~35. White background ~5.")
 	
+	parser.add_option("--img", 
+						action="store_true", 
+						dest="imagetoggle",
+						default=False,
+						help = "No arg required, flag will show the images")
+
+
+	#################################
+	# Set up the parser options
+	#################################
+
 	(parse,args) = parser.parse_args()
 	if not parse.img:
 		parser.error("input file path required as argument (-h for help)")
@@ -214,20 +224,25 @@ def main():
 	parse.p_infill = float(parse.p_infill)
 	parse.p_numlayers = int(parse.p_numlayers)
 	parse.white = float(parse.white)
+	levels = int(parse.levels)
 
 	if parse.p_numlayers < 1:
 		parser.error("num layers must be >= 1 (-h for help)")
 	if parse.p_infill > 1.0:
 		parser.error("percent infill must be <= 1 (-h for help)")
 
-	# epsilon for floating point error
+	# Epsilon for floating point error
 	epsilon = 0.01
 
-	##### Set up writing the output to a file
-	# write the file
+
+	#################################
+	# Set up writing the output to a file
+	#################################
+
+	# Write the file
 	gcode = open(parse.outF, 'w')
 
-	# write the starting g-code
+	# Write the starting g-code
 	gcode.write("M104 S200.0\n")
 	gcode.write("M109 S200.0\n")
 	gcode.write("G21       ;metric values\n")
@@ -247,10 +262,14 @@ def main():
 	gcode.write("M107\n")
 	gcode.write("G1 F1500.0 E-6.50000\n")
 
-	allperims = processPancake(parse.img, parse.radius, parse.tolerance, parse.tolerance2, parse.p_layerthickness, parse.white)
+	allperims = processPancake(parse.img, parse.radius, parse.tolerance, 
+		parse.tolerance2, parse.p_layerthickness, parse.white, parse.imagetoggle)
+
 
 	#################################
 	# PERIMETER ONLY LAYER
+	#################################
+
 	perims0 = allperims[0]
 
 	first = True
@@ -259,47 +278,58 @@ def main():
 
 
 	#################################
-	# DARKEST LAYER
-	perims1 = allperims[1]
-	grid1 = infill_grid(perims1, parse.p_infill, parse.p_numlayers * parse.p_layerthickness)
-	il1 = infill(perims1, grid1, parse.p_numlayers * parse.p_layerthickness)
+	# DARKEST LAYER	
+	#################################
 
-	first = False
-	gcode.write(";PERIM:0\n")
-	gcode_perim(gcode, perims1, parse.p_numlayers, first, False)
+	if(levels >= 2):
+		perims1 = allperims[1]
+		grid1 = infill_grid(perims1, parse.p_infill, parse.p_numlayers * parse.p_layerthickness)
+		il1 = infill(perims1, grid1, parse.p_numlayers * parse.p_layerthickness)
 
-	gcode.write(";INFILL:0\n")
-	gcode_infill(gcode, il1, first)
+		first = False
+		gcode.write(";PERIM:0\n")
+		gcode_perim(gcode, perims1, parse.p_numlayers, first, False)
+
+		gcode.write(";INFILL:0\n")
+		gcode_infill(gcode, il1, first)
 
 
 	#################################
 	# MIDDLE LAYER
-	perims2 = allperims[2]
-	grid2 = infill_grid(perims2, parse.p_infill, parse.p_numlayers * parse.p_layerthickness)
-	il2 = infill(perims2, grid2, parse.p_numlayers * float(parse.p_layerthickness))
+	#################################
 
-	gcode.write(";PERIM:0\n")
-	gcode_perim(gcode, perims2, parse.p_numlayers, first, False)
+	if(levels >= 1):
+		perims2 = allperims[2]
+		grid2 = infill_grid(perims2, parse.p_infill, parse.p_numlayers * parse.p_layerthickness)
+		il2 = infill(perims2, grid2, parse.p_numlayers * float(parse.p_layerthickness))
 
-	gcode.write(";INFILL:0\n")
-	gcode_infill(gcode, il2, first)
+		gcode.write(";PERIM:0\n")
+		gcode_perim(gcode, perims2, parse.p_numlayers, first, False)
+
+		gcode.write(";INFILL:0\n")
+		gcode_infill(gcode, il2, first)
 
 
 	#################################
 	# LIGHTEST LAYER
-	perims3 = allperims[3]
-	grid3 = infill_grid(perims3, parse.p_infill, parse.p_numlayers * parse.p_layerthickness)
-	il3 = infill(perims3, grid3, parse.p_numlayers * float(parse.p_layerthickness))
+	#################################
 
-	gcode.write(";PERIM:0\n")
-	gcode_perim(gcode, perims3, parse.p_numlayers, first, False)
+	if(levels >= 3):
+		perims3 = allperims[3]
+		grid3 = infill_grid(perims3, parse.p_infill, parse.p_numlayers * parse.p_layerthickness)
+		il3 = infill(perims3, grid3, parse.p_numlayers * float(parse.p_layerthickness))
 
-	gcode.write(";INFILL:0\n")
-	gcode_infill(gcode, il3, first)
+		gcode.write(";PERIM:0\n")
+		gcode_perim(gcode, perims3, parse.p_numlayers, first, False)
+
+		gcode.write(";INFILL:0\n")
+		gcode_infill(gcode, il3, first)
 
 
 	#################################
 	# FINAL INFILL PERIMETER
+	#################################
+
 	perims4 = allperims[4]
 	grid4 = infill_grid(perims4, parse.p_infill, parse.p_numlayers * parse.p_layerthickness)
 	il4 = infill(perims4, grid4, parse.p_numlayers * float(parse.p_layerthickness))
@@ -308,7 +338,10 @@ def main():
 	gcode_infill(gcode, il4, first)
 
 
-	# write end gcode
+	#################################
+	# Final GCode
+	#################################
+
 	gcode.write("G1 F1500.0 E374.01664\n")
 	gcode.write("M107\n")
 	gcode.write("M104 S0     ;extruder heater off\n")

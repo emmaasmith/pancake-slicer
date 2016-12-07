@@ -4,8 +4,12 @@ import cv2
 import math
 from matplotlib import pyplot as plt
 
-def pancake(imgurl, rad, tol, tol2, epsilon, white):
-	# load image
+def pancake(imgurl, rad, tol, tol2, epsilon, white, imagetoggle):
+
+	#########################
+	# Set up images
+	#########################
+
 	img = cv2.imread(imgurl)
 	grayimg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -16,26 +20,26 @@ def pancake(imgurl, rad, tol, tol2, epsilon, white):
 
 	height, width, channels = img.shape
 	
-
 	#########################
 	# Image levels
 	#########################
 
 	grayblur = cv2.bilateralFilter(grayimg, 100, 100, 0)
 
-	# Lightest
+	# Tolerance caps
 	if (tol > 100): tol = 100
 	if (tol < -100): tol = -100
 	if (tol2 > 100): tol2 = 100
 	if (tol2 < -100): tol2 = -100
 
+	# Lightest
 	ret,thresh1 = cv2.threshold(grayblur, 193 + tol2, 255, cv2.THRESH_BINARY)
 	# Middle
 	ret,thresh2 = cv2.threshold(grayblur, 131 + tol2, 255, cv2.THRESH_BINARY)
 	# Darkest
 	ret,thresh3 = cv2.threshold(grayblur, 69 + tol, 255, cv2.THRESH_BINARY)
 
-	# blue, lightest
+	# Lightest region
 	ret,canny1 = cv2.threshold(thresh1, 127, 255, cv2.THRESH_BINARY_INV)
 	contours1,hierarchy1 = cv2.findContours(canny1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -45,8 +49,7 @@ def pancake(imgurl, rad, tol, tol2, epsilon, white):
 		cv2.drawContours(b, [approx], -1, (255, 0, 0), -1)
 		approx3.append(approx)
 
-
-	# green, middle
+	# Middle region
 	ret,canny2 = cv2.threshold(thresh2, 127, 255, cv2.THRESH_BINARY_INV)
 	contours2,hierarchy2 = cv2.findContours(canny2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -56,7 +59,7 @@ def pancake(imgurl, rad, tol, tol2, epsilon, white):
 		cv2.drawContours(g, [approx], -1, (0, 255, 0), -1)
 		approx2.append(approx)
 
-	# red, darkest
+	# Darkest region
 	ret,canny3 = cv2.threshold(thresh3, 127, 255, cv2.THRESH_BINARY_INV)
 	contours3,hierarchy3 = cv2.findContours(canny3, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -68,25 +71,11 @@ def pancake(imgurl, rad, tol, tol2, epsilon, white):
 
 
 	#########################
-	# Perimeter
+	# Perimeter construction
 	#########################
 
 	thresh = cv2.Canny(grayblur, 150 - rad, 150 + rad)
 	contours,hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-
-	# i=0
-	# perimlines = []
-	# for h in hierarchy[0]:
-	# 	if (hierarchy[0][i][3] >= 0):
-	# 		print h
-	# 		# cv2.drawContours(img, [contours[i]], -1, (0, 0, 255), 1)
-	# 		# perimlines.append(contours[i])
-	# 	else:
-	# 		print "no ", h
-	# 		cv2.drawContours(img, [contours[i]], -1, (0, 0, 255), 1)
-	# 		perimlines.append(contours[i])
-	# 	i+=1
-
 
 	perimlines = []
 	perimdoubled = []
@@ -135,44 +124,17 @@ def pancake(imgurl, rad, tol, tol2, epsilon, white):
 	cv2.drawContours(whitebg, [approx], -1, (0, 0, 0), -1)
 
 
+	#########################
+	# Printing and return
+	#########################
 
-
-	# cv2.imshow("Brightest3", b)
-	# cv2.imshow("Brightest2", g)
-	# cv2.imshow("Brightest1", r)
-	# cv2.imshow("Final", img)
-	# cv2.imshow("Outer", whitebg)
-
-	# cv2.waitKey(0)
+	if imagetoggle:
+		cv2.imshow("Brightest3", b)
+		cv2.imshow("Brightest2", g)
+		cv2.imshow("Brightest1", r)
+		cv2.imshow("Final", img)
+		cv2.imshow("Outer", whitebg)
+		cv2.waitKey(0)
 
 	return [totperim, approx1, approx2, approx3, [approx]]
-
-# pancake('images/me.jpg', 101, 0, .35, 5)
-# pancake('images/id.jpg', 101, -60, -75, .35, 5)
-# pancake('images/smile.jpg', 50, 50, 40, 5, 5)
-# pancake('images/spiritday.jpg', 400, -40, 0, .035, 35)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	
