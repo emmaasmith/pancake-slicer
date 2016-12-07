@@ -98,25 +98,25 @@ def pancake(imgurl, rad, tol, tol2, epsilon):
 			cx = cv2.approxPolyDP(c, epsilon, False)
 			cv2.drawContours(img, [cx], -1, (0, 0, 255), 1)
 
-			if (carea/cperim > 1.0):
+			if (abs(carea/cperim) > 1):
 				perimlines.append(cx)
 			else:
 				perimdoubled.append(cx)
 
 
 
-	perimfixed = []
+	totperim = []
 	for p in perimdoubled:
 		phalf = len(p) / 2
 		if phalf > 0:
-			perimfixed.append(p[0:phalf+1])
+			totperim.append(p[0:phalf+1])
+	for p in perimlines:
+		totperim.append(p)
 
-	
-	# print (perimlines)
-	# print " BRUTAL3"
-	# print (perimfixed)
 
-	totperim = np.concatenate([perimlines, perimfixed])
+	# totperim = perimlines.extend(perimfixed)
+
+	# print "HELLO", type(perimfixed[0])
 
 	#########################
 	# Outer image perimeter
@@ -139,8 +139,8 @@ def pancake(imgurl, rad, tol, tol2, epsilon):
 	# cv2.imshow("Brightest3", b)
 	# cv2.imshow("Brightest2", g)
 	# cv2.imshow("Brightest1", r)
-	cv2.imshow("Final", img)
-	cv2.waitKey(0)
+	# cv2.imshow("Final", img)
+	# cv2.waitKey(0)
 
 	return [totperim, approx1, approx2, approx3]
 
