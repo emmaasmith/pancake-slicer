@@ -15,15 +15,15 @@ Exploring 3D printer slicing software as applied to printer art.
 
 flag | action
 ------- | -------
-in | input file name
-out | output file name
-layer | # of perimeter layers
-l | # of levels
-th | layer thickness
-infill | % infill (1.0)
-r | blur radius
-t | tolerance darkest
-t2 | tolerance lighter
-flip | flag to flip the image
-w | white tolerance
-img | flag to show the images
+--in | input file name
+--out | output file name
+--layer | # of perimeter layers
+--l | # of levels
+--th | layer thickness
+--infill | % infill (1.0)
+--r | blur radius
+--t | tolerance darkest
+--t2 | tolerance lighter
+--flip | flag to flip the image
+--w | white tolerance
+--img | flag to show the images
