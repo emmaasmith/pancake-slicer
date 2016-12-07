@@ -1,0 +1,4 @@
+*.pyc
+*.gcode
+.DS_Store
+images
