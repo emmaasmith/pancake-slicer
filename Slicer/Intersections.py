@@ -272,7 +272,6 @@ def grid_intersect(lines, gl):
 	return vert 
 
 def infill(lines, grid, n):
-	# print "n is ", n
 	newlines = []
 	for gl in grid:
 		# Vert is a list of all intersecting points: lines vs. gridlines
@@ -282,18 +281,12 @@ def infill(lines, grid, n):
 		if (withinEpsilon(gl.v1.x, gl.v2.x, 0.1)):
 			vert = list(numpy.unique(vert))
 			vert.sort(key = lambda v: v.y, reverse=False)
-			# print "1 "
-			# for v in vert:
-			# 	print v.x, v.y, v.z
-			# print " "
+
 			while (i+1 < len(vert)):
 				if abs(vert[i].y - vert[i+1].y) > n:
  					vert[i].y += n
  					vert[i+1].y -= n
  					newlines.append(Line(vert[i], vert[i+1]))
- 					# print vert[i].x, vert[i].y, vert[i].z
- 				# else:
-					# print "abs ", abs(vert[i].y - vert[i+1].y)
 
 				i += 2
 
@@ -305,13 +298,8 @@ def infill(lines, grid, n):
  					vert[i].x += n
  					vert[i+1].x -= n
  					newlines.append(Line(vert[i], vert[i+1]))
- 					# print "2", i
 				i += 2
 
-	# for nl in newlines:
-	# 	print nl.v1.x, nl.v1.y, nl.v1.z
-	# 	print nl.v2.x, nl.v2.y, nl.v2.z
-	# 	print " "
 	return newlines
 
 # give lines l and percent infill k
@@ -341,12 +329,6 @@ def infill_grid(perims, k, n):
 	if (k > 0.95): k = 0.95
 	if (k > 0.95): k = 0.95
 
-	# dif = all steps
-	# dif / n  = # of layers
-	# dif / 100 = 1% filled
-	# dif * x = x% (x is a decimal) filled
-	# dif * x / n = # of layers
-
 	stepx = n + (n * (1 - k))
 	stepy = n + (n * (1 - k))
 	if (stepy == 0 or stepx == 0):
@@ -354,13 +336,12 @@ def infill_grid(perims, k, n):
 	if (stepy < n): stepy = n
 	if (stepx < n): stepx = n
 
-
 	# infill grid lines
 	grid=[]
 	for x in numpy.arange(lowx, hix, stepx):
 		grid.append(Line(Vert(x, miny, z), Vert(x, maxy, z)))
-	for y in numpy.arange(lowy, hiy, stepy):
-		grid.append(Line(Vert(minx, y, z), Vert(maxx, y, z)))
+	# for y in numpy.arange(lowy, hiy, stepy):
+	# 	grid.append(Line(Vert(minx, y, z), Vert(maxx, y, z)))
 
 	return grid
 
