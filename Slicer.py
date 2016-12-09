@@ -18,7 +18,6 @@ from Vert import mult
 from Vert import div
 from Vert import equalv
 from Vert import dot
-from Support import support
 from optparse import OptionParser
 from pancake import pancake
 
